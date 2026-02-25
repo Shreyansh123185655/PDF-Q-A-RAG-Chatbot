@@ -4,9 +4,7 @@ import pdfplumber  # For table extraction
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from langchain.llms import HuggingFaceHub
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+import requests
 import os
 import uuid  # For unique file naming
 
@@ -73,22 +71,34 @@ def retrieve_relevant_text(query, index, text_chunks, top_k=3):
     
     return [text_chunks[i] for i in indices[0]]
 
-# Load LLM
-try:
-    llm = HuggingFaceHub(
-        repo_id="google/flan-t5-large",
-        task="text2text-generation",
-        model_kwargs={"temperature": 0.5, "max_length": 512}
-    )
-except Exception as e:
-    st.error(f"Error initializing LLM: {str(e)}")
-    st.stop()
-
-# Define prompt
-prompt = PromptTemplate(
-    input_variables=["context", "question"],
-    template="Answer based on the context below:\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer:"
-)
+# Function to call Hugging Face Inference API directly
+def call_huggingface_api(prompt, api_key):
+    """Call Hugging Face Inference API directly"""
+    API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "temperature": 0.5,
+            "max_length": 512
+        }
+    }
+    
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        if isinstance(result, list) and len(result) > 0:
+            return result[0].get("generated_text", "")
+        elif isinstance(result, dict):
+            return result.get("generated_text", "")
+        else:
+            return str(result)
+            
+    except Exception as e:
+        return f"API Error: {str(e)}"
 
 # Process uploaded PDF
 if uploaded_file and hf_api_key:
@@ -121,17 +131,18 @@ if user_question and st.session_state.faiss_index:
     relevant_chunks = retrieve_relevant_text(user_question, st.session_state.faiss_index, st.session_state.text_chunks)
     context = "\n".join(relevant_chunks)
 
-    # Initialize QA chain when needed
-    try:
-        qa_chain = LLMChain(llm=llm, prompt=prompt)
-        
-        # Generate answer
-        answer = qa_chain.run({"context": context, "question": user_question})
-        
+    # Create prompt for the model
+    prompt = f"Answer based on the context below:\n\nContext: {context}\n\nQuestion: {user_question}\n\nAnswer:"
+
+    # Generate answer using direct API call
+    with st.spinner("Generating answer..."):
+        answer = call_huggingface_api(prompt, hf_api_key)
+    
+    if "API Error:" in answer:
+        st.error(f"Error generating answer: {answer}")
+        st.write("Please check your Hugging Face API key and try again.")
+    else:
         st.write("### Answer:")
         st.write(answer)
-    except Exception as e:
-        st.error(f"Error generating answer: {str(e)}")
-        st.write("Please check your Hugging Face API key and try again.")
 else:
     st.warning("Please upload a PDF and enter a Hugging Face API Key.")
