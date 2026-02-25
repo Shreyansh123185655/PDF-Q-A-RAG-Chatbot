@@ -73,32 +73,40 @@ def retrieve_relevant_text(query, index, text_chunks, top_k=3):
 
 # Function to call Hugging Face Inference API directly
 def call_huggingface_api(prompt, api_key):
-    """Call Hugging Face Inference API directly"""
-    API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+    """Call Hugging Face Inference API directly with fallback models"""
+    models = [
+        "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1",
+        "https://api-inference.huggingface.co/models/google/flan-t5-base",
+        "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
+    ]
+    
     headers = {"Authorization": f"Bearer {api_key}"}
     
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "temperature": 0.5,
-            "max_length": 512
-        }
-    }
-    
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        result = response.json()
-        
-        if isinstance(result, list) and len(result) > 0:
-            return result[0].get("generated_text", "")
-        elif isinstance(result, dict):
-            return result.get("generated_text", "")
-        else:
-            return str(result)
+    for model_url in models:
+        try:
+            payload = {
+                "inputs": prompt,
+                "parameters": {
+                    "temperature": 0.5,
+                    "max_new_tokens": 256
+                }
+            }
             
-    except Exception as e:
-        return f"API Error: {str(e)}"
+            response = requests.post(model_url, headers=headers, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            
+            if isinstance(result, list) and len(result) > 0:
+                return result[0].get("generated_text", "")
+            elif isinstance(result, dict):
+                return result.get("generated_text", "")
+            else:
+                return str(result)
+                
+        except Exception as e:
+            continue  # Try next model
+    
+    return f"API Error: All models failed. Please check your Hugging Face API key."
 
 # Process uploaded PDF
 if uploaded_file and hf_api_key:
