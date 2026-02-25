@@ -76,7 +76,8 @@ def retrieve_relevant_text(query, index, text_chunks, top_k=3):
 # Load LLM
 try:
     llm = HuggingFaceHub(
-        repo_id="mistralai/Mistral-7B-Instruct-v0.3", 
+        repo_id="mistralai/Mistral-7B-Instruct-v0.3",
+        task="text-generation",
         model_kwargs={"temperature": 0.5, "max_new_tokens": 512}
     )
 except Exception as e:
