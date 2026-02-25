@@ -76,9 +76,9 @@ def retrieve_relevant_text(query, index, text_chunks, top_k=3):
 # Load LLM
 try:
     llm = HuggingFaceHub(
-        repo_id="mistralai/Mistral-7B-Instruct-v0.3",
-        task="text-generation",
-        model_kwargs={"temperature": 0.5, "max_new_tokens": 512}
+        repo_id="google/flan-t5-large",
+        task="text2text-generation",
+        model_kwargs={"temperature": 0.5, "max_length": 512}
     )
 except Exception as e:
     st.error(f"Error initializing LLM: {str(e)}")
