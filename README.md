@@ -18,8 +18,8 @@ This project is a **PDF-based Q&A chatbot** built with **Streamlit**, **FAISS** 
 
 ### **1️⃣ Clone the Repository**
 ```bash
-git clone https://github.com/ShubhamMandowara/llm_rag.git
-cd pdf-qna-chatbot
+git clone https://github.com/Shreyansh123185655/PDF-Q-A-RAG-Chatbot.git
+cd PDF-Q-A-RAG-Chatbot
 ```
 
 ### **2️⃣ Create a Virtual Environment**
@@ -63,7 +63,7 @@ streamlit run app.py
 
 ## 🏗️ Project Structure
 ```
-📂 pdf-qna-chatbot
+📂 PDF-Q-A-RAG-Chatbot
 │── app.py              # Main Streamlit app
 │── requirements.txt    # Required dependencies
 │── secrets.toml         # Streamlit config folder (for secrets)
@@ -112,4 +112,4 @@ This project is **open-source** under the GPL-3.0 License.
 ---
 
 ## 👨‍💻 Author
-Developed by [Shubham Mandowara](https://github.com/shubhammandowara). Contributions are welcome! 😊🚀
+Developed by [Shreyansh Gupta](https://github.com/Shreyansh123185655). Contributions are welcome! 😊🚀
