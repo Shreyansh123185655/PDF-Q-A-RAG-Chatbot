@@ -74,15 +74,20 @@ def retrieve_relevant_text(query, index, text_chunks, top_k=3):
     return [text_chunks[i] for i in indices[0]]
 
 # Load LLM
-llm = HuggingFaceHub(repo_id="mistralai/Mistral-7B-Instruct-v0.3", model_kwargs={"temperature": 0.5})
+try:
+    llm = HuggingFaceHub(
+        repo_id="mistralai/Mistral-7B-Instruct-v0.3", 
+        model_kwargs={"temperature": 0.5, "max_new_tokens": 512}
+    )
+except Exception as e:
+    st.error(f"Error initializing LLM: {str(e)}")
+    st.stop()
 
 # Define prompt
 prompt = PromptTemplate(
     input_variables=["context", "question"],
     template="Answer based on the context below:\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer:"
 )
-
-qa_chain = LLMChain(llm=llm, prompt=prompt)
 
 # Process uploaded PDF
 if uploaded_file and hf_api_key:
@@ -115,10 +120,17 @@ if user_question and st.session_state.faiss_index:
     relevant_chunks = retrieve_relevant_text(user_question, st.session_state.faiss_index, st.session_state.text_chunks)
     context = "\n".join(relevant_chunks)
 
-    # Generate answer
-    answer = qa_chain.run({"context": context, "question": user_question})
-
-    st.write("### Answer:")
-    st.write(answer)
+    # Initialize QA chain when needed
+    try:
+        qa_chain = LLMChain(llm=llm, prompt=prompt)
+        
+        # Generate answer
+        answer = qa_chain.run({"context": context, "question": user_question})
+        
+        st.write("### Answer:")
+        st.write(answer)
+    except Exception as e:
+        st.error(f"Error generating answer: {str(e)}")
+        st.write("Please check your Hugging Face API key and try again.")
 else:
     st.warning("Please upload a PDF and enter a Hugging Face API Key.")
